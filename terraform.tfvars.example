@@ -1,0 +1,41 @@
+
+admin = {
+  "name" = "",
+  "secret_key" = "",
+  "access_key" = "",
+  "SSH_private_path" = "",
+  "SSH_public_key" = ""
+}
+
+# # Administrators Information
+# # secret_key       = ""
+# # access_key       = ""
+# # SSH_private_path = ""
+# # SSH_public_key   = ""
+
+# # Cloud environment
+# vpc_id          = "vpc-3B669D8B"     # vpc-3B669D8B
+# subnets         = ["172.31.66.0/24"] # SG subnets
+# SMS_subnet      = "172.31.66.0/24"   # SMS subnet
+# az              = "ru-msk-comp1p"    # Zone
+# allow_tcp_ports = [22, 80, 443]
+# allow_ips       = ["195.38.23.0/24", "176.99.159.90/32"]
+
+# # Configure machines
+# # Check Point SMS R81.20 1", "Check Point SMS R81.20 2"]
+# vms = [
+#   {
+#     "name" : "[ankurbatov@croc.ru] Check Point SMS R81.20",
+#     "image" : "cmi-76C60AE5", # Check Point SMS R81.20 
+#     "type" : "c5.2large",
+#     "volume_type" : "gp2",
+#     "volume_size" : 320
+#     # },
+#     # {
+#     #     "name": "[ankurbatov@croc.ru] Check Point SMS R81.20 2",
+#     #     "image":"cmi-76C60AE5",     # Check Point SMS R81.20 
+#     #     "type": "c5.2large",
+#     #     "volume_type": "gp2",
+#     #     "volume_size": 320
+#   }
+# ]
