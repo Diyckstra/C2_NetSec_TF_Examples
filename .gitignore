@@ -4,3 +4,6 @@
 .terraform.lock.hcl
 *.tf.def
 terraform.tfvars
+*.tf.2
+*_c2rc.sh
+*.txt
