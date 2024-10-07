@@ -32,3 +32,7 @@ output "Interface_ID" {
 output "EIPs_ID" {
   value = aws_eip.Creating_EIPs[*].public_ip
 }
+
+output "Output_Attached_Interfaces" {
+  value = aws_network_interface_attachment.Attachment_Secondary_Ifs
+}
