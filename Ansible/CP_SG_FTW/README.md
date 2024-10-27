@@ -24,10 +24,6 @@ The Check Point server should have **Gaia API >=v1.7** engine installed on. More
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
-
-Dependencies
-------------
 The following variables must be defined:
 - `valid_ips` -  variable must define a list of IP addresses or networks from which access will be made (it is also necessary for the ansible client to be in this list);
 - The `SecurityGateways` or `SecurityManagementServer` group must be defined for the host;
