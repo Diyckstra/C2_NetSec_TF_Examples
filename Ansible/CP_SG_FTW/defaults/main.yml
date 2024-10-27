@@ -1,0 +1,10 @@
+---
+# defaults file for CP_SG_FTW
+ntp_1: 194.190.168.1
+ntp_2: 77.37.134.150
+dns_1: 8.8.8.8
+dns_2: 8.8.4.4
+dns_3: ""
+dns_suffix: "stand.local"
+timezone: "Europe / Moscow"
+grub2_script_path: /home/{{ ansible_user }}/generate_grub2_hash.sh

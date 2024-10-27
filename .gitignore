@@ -7,3 +7,6 @@ terraform.tfvars
 *.tf.2
 *_c2rc.sh
 *.txt
+inventory.yml
+.terraform.tfstate.lock.info
+.tmp*

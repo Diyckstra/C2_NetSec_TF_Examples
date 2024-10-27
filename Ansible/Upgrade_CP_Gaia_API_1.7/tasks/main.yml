@@ -1,0 +1,26 @@
+---
+# tasks file for Upgrade_CP_Gaia_API_1.7
+
+- name: "Create directory for upgrade files"
+  ansible.builtin.file:
+    path: "{{ package_path }}"
+    mode: "660"
+    state: directory
+
+- name: "Extract upgrade script"
+  ansible.builtin.unarchive:
+    src: "{{ package_name }}"
+    dest: "{{ package_path }}"
+
+- name: "Upgrade Gaia API to 1.7"
+  ansible.builtin.shell: "{{ package_path }}/install_gaia_api.sh"
+  args:
+    chdir: "{{ package_path }}"
+  register: upgrade_script_result
+  notify: Pause_to_restart_api_status
+  # noqa command-instead-of-shell
+  # noqa no-changed-when
+
+- name: "Output the result script"
+  ansible.builtin.debug:
+    msg: "{{ upgrade_script_result }}"

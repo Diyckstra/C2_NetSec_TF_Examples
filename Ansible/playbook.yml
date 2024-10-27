@@ -1,0 +1,172 @@
+---
+- name: "Create user for API"
+  hosts: all
+  gather_facts: false
+  connection: httpapi
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.gaia.checkpoint
+    ansible_user: admin
+    ansible_password: admin
+  tasks:
+    - name: "Show api versions"
+      check_point.gaia.cp_gaia_api_versions_facts:
+      register: api_version_result
+
+    - name: "Check user Ansible"
+      block:
+        - name: "Get user Ansible"
+          check_point.gaia.cp_gaia_user_facts:
+            name: ansible
+          ignore_errors: false
+          register: user_fact_result
+
+        - name: "Show user Ansible with get"
+          ansible.builtin.debug:
+            msg: "{{ user_fact_result }}"
+
+      rescue:
+        - name: "Create user Ansible"
+          check_point.gaia.cp_gaia_user:
+            name: ansible
+            real_name: Ansible
+            uid: 0
+            shell: bash
+            allow_access_using: ["CLI", "Web-UI", "Gaia-API"]
+            roles: ["adminRole"]
+            primary_system_group_id: 0
+            password: "{{ api_password }}"
+            must_change_password: false
+            state: present
+          register: user_fact_result
+
+        - name: "Show created user Ansible"
+          ansible.builtin.debug:
+            msg: "{{ user_fact_result }}"
+
+    - name: "Unlock database"
+      check_point.gaia.cp_gaia_run_script:
+        script: clish -c "lock database override" && clish -c "unlock database"
+
+- name: "Upgrade Gaia API to 1.7"
+  hosts: all
+  gather_facts: false
+  connection: ssh
+  vars:
+    ansible_port: 22
+    ansible_user: ansible
+    ansible_password: "{{ api_password }}"
+    ansible_ssh_common_args: '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+    ansible_python_interpreter: /usr/bin/python3
+  roles:
+    - role: Upgrade_CP_Gaia_API_1.7
+      when:
+        - api_version_result.ansible_facts.current_version in ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6"]
+
+- name: "Check for FTW"
+  hosts: all
+  gather_facts: false
+  connection: httpapi
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.gaia.checkpoint
+    ansible_user: admin
+    ansible_password: admin
+  tasks:
+    - name: "Check FTW state"
+      check_point.gaia.cp_gaia_run_script:
+        script: ftw
+      register: install_state_output
+
+    - name: "Check API version"
+      check_point.gaia.cp_gaia_api_versions_facts:
+      register: api_version_result
+
+    - name: "Unlock database"
+      check_point.gaia.cp_gaia_run_script:
+        script: clish -c "lock database override" && clish -c "unlock database"
+
+- name: "Start Fist Time Wizard"
+  hosts: all
+  gather_facts: false
+  connection: httpapi
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.gaia.checkpoint
+    ansible_user: ansible
+    ansible_password: "{{ api_password }}"
+  roles:
+    - role: CP_SG_FTW
+      when:
+        - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode ==
+          "In order to configure your system, please access the Web UI and finish the First Time Wizard."
+        - api_version_result.ansible_facts.current_version == "1.7"
+
+- name: "Check for FTW"
+  hosts: SecurityManagementServer
+  gather_facts: false
+  connection: httpapi
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.gaia.checkpoint
+    ansible_user: admin
+    ansible_password: "{{ admin_password }}"
+  tasks:
+    - name: "Check FTW state"
+      check_point.gaia.cp_gaia_run_script:
+        script: ftw
+      register: install_state_output
+
+    - name: "Unlock database"
+      check_point.gaia.cp_gaia_run_script:
+        script: clish -c "lock database override" && clish -c "unlock database"
+
+- name: "Pause for restart CP SMS"
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: "Pause for restart CP SMS"
+      ansible.builtin.pause:
+        minutes: 3
+
+- name: "Activate MGMT API for valid IPs"
+  hosts: SecurityManagementServer
+  gather_facts: false
+  connection: httpapi
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.gaia.checkpoint
+    ansible_user: admin
+    ansible_password: "{{ admin_password }}"
+  tasks:
+    - name: "Enable API IPs from"
+      check_point.gaia.cp_gaia_run_script:
+        script: >
+          mgmt_cli set api-settings
+          accepted-api-calls-from "all ip addresses that can be used for gui clients"
+          --user "{{ ansible_user }}"
+          --domain 'System Data'
+          --password "{{ ansible_password }}"
+          --format json
+        wait_for_task: true
+      register: api_access_result_1
+      when:
+        - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
+
+    - name: "Display Output"
+      ansible.builtin.debug:
+        msg: "{{ api_access_result_1.run_script.tasks[0]['task-details'][0]['output'] | b64decode }}"
+      when:
+        - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
+
+    - name: "Display Error"
+      ansible.builtin.debug:
+        msg: "{{ api_access_result_1.run_script.tasks[0]['task-details'][0]['error'] | b64decode }}"
+      when:
+        - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""

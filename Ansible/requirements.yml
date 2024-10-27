@@ -1,0 +1,12 @@
+collections:
+  - name: check_point.gaia
+    version: "5.0.1"
+    source: https://galaxy.ansible.com/api/
+    # source: git+https://github.com/CheckPointSW/CheckPointAnsibleGAIACollection.git
+    # type: git
+
+  - name: check_point.mgmt
+    version: "6.2.1"
+    source: https://galaxy.ansible.com/api/
+    # source: git+https://github.com/CheckPointSW/CheckPointAnsibleMgmtCollection.git
+    # type: git

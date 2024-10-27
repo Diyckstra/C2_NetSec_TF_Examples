@@ -1,0 +1,5 @@
+---
+# handlers file for Upgrade_CP_Gaia_API_1.7
+- name: "Pause_to_restart_api_status"
+  ansible.builtin.pause:
+    minutes: 1

@@ -1,0 +1,208 @@
+---
+# tasks file for CP_SG_FTW
+
+### GRUB2
+- name: "Add script grub2-password"
+  check_point.gaia.cp_gaia_put_file:
+    file_name: "{{ grub2_script_path }}"
+    text_content: |
+      #!/bin/bash
+      {
+        echo "$GRUBPASSWORD"
+        echo "$GRUBPASSWORD"
+      } | grub2-mkpasswd-pbkdf2 | awk '{print $7}' | sed '/^[[:space:]]*$/d'
+    override: true
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Set access for script grub2-password"
+  check_point.gaia.cp_gaia_run_script:
+    script: "chmod +x {{ grub2_script_path }}"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Execute script grub2-password"
+  check_point.gaia.cp_gaia_run_script:
+    script: 'clish -c "set grub2-password-hash $({{ grub2_script_path }})"'
+    environment_variables: [{"name": "GRUBPASSWORD", "value": "{{ grub2_password }}"}]
+  register: grub_result
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Check grub2 password deploy result"
+  ansible.builtin.debug:
+    msg: |
+      Wrong! Grub2 password not install.
+      Msg: {{ grub_result.run_script.tasks[0]['task-details'][0]['output'] | b64decode }}
+  when:
+    - grub_result.run_script.tasks[0]['task-details'][0]['output'] | b64decode != ""
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Remove script grub2-password"
+  check_point.gaia.cp_gaia_run_script:
+    script: "rm {{ grub2_script_path }}"
+  tags:
+    - cpsg
+    - spsms
+
+### Expert
+- name: "Setting expert new password"
+  check_point.gaia.cp_gaia_expert_password:
+    password: "{{ expert_password }}"
+  tags:
+    - cpsg
+    - spsms
+
+### Access to console
+- name: Initialize empty lists
+  ansible.builtin.set_fact:
+    allowed_networks: []
+    allowed_hosts: []
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Add IPs to hosts list"
+  ansible.builtin.set_fact:
+    allowed_hosts: "{{ allowed_hosts + [(item.split('/')[0] if item.endswith('/32') else item)] }}"
+  loop: "{{ valid_ips }}"
+  when: item is match('^[0-9.]+$') or item.endswith('/32')
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Add IPs-networks to networks list"
+  ansible.builtin.set_fact:
+    allowed_networks: "{{ allowed_networks + [{'subnet': item.split('/')[0], 'mask_length': item.split('/')[1] | int}] }}"
+  loop: "{{ valid_ips }}"
+  when: item is match('^.*\/[0-9]+$') and not item.endswith('/32')
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Set allowed clients"
+  check_point.gaia.cp_gaia_allowed_clients:
+    allowed_any_host: false
+    allowed_hosts: "{{ allowed_hosts }}"
+    allowed_networks: "{{ allowed_networks }}"
+  tags:
+    - cpsg
+    - spsms
+
+### FTW
+- name: "Changing a hostname"
+  check_point.gaia.cp_gaia_hostname:
+    name: "{{ hostname }}"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Changing the banner message"
+  check_point.gaia.cp_gaia_banner:
+    msg: |
+      *********************************************************************
+      * WARNING: Unauthorized access is prohibited.                       *
+      * All activities are monitored and recorded.                        *
+      * Unauthorized access is strictly forbidden and punishable by law.  *
+      *********************************************************************
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Setting new timezone"
+  check_point.gaia.cp_gaia_time_and_date:
+    timezone: "{{ timezone }}"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Setting ntp servers for the system"
+  check_point.gaia.cp_gaia_ntp:
+    enabled: true
+    servers:
+      - {"version": 4, "type": "primary", "address": "{{ ntp_1 }}"}
+      - {"version": 4, "type": "secondary", "address": "{{ ntp_2 }}"}
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Setting dns servers for the system"
+  check_point.gaia.cp_gaia_dns:
+    suffix: "{{ dns_suffix }}"
+    primary: "{{ dns_1 }}"
+    secondary: "{{ dns_2 }}"
+    tertiary: "{{ dns_3 }}"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Disable IPv6"
+  check_point.gaia.cp_gaia_ipv6:
+    enabled: false
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Initial setup for SMS"
+  check_point.gaia.cp_gaia_initial_setup:
+    wait_for_task: true
+    security_management: { type: primary }
+    password: "{{ admin_password }}"
+  register: ftw_result
+  when:
+    - grub_result.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
+    - "'SecurityManagementServer' in group_names"
+  tags:
+    - cpsms
+
+- name: "Initial setup for SG"
+  check_point.gaia.cp_gaia_initial_setup:
+    wait_for_task: true
+    security_gateway: {cluster_member: true, activation_key: "{{ sic_password }}", dynamically_assigned_ip: false }
+    password: "{{ admin_password }}"
+  register: ftw_result
+  when:
+    - grub_result.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
+    - "'SecurityGateways' in group_names"
+  tags:
+    - cpsg
+
+- name: "Print FTW result"
+  ansible.builtin.debug:
+    msg: "{{ ftw_result }}"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Pause to start cpconfig"
+  ansible.builtin.pause:
+    seconds: 30
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Unlock database"
+  check_point.gaia.cp_gaia_run_script:
+    script: clish -c "lock database override" && clish -c "unlock database"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Start check for updates"
+  check_point.gaia.cp_gaia_run_script:
+    script: clish -c "installer check-for-updates not-interactive"
+  tags:
+    - cpsg
+    - spsms
+
+- name: "Unlock database"
+  check_point.gaia.cp_gaia_run_script:
+    script: clish -c "lock database override" && clish -c "unlock database"
+  tags:
+    - cpsg
+    - spsms

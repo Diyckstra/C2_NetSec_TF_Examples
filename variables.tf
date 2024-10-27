@@ -2,13 +2,14 @@
 # Configure AWS access_key
 
 variable "admin" {
-  type = map(string)
+#  type = map(any)
   default = {
-    "name"              = "admin"
+    "name"              = "",
     "secret_key"        = "",
     "access_key"        = "",
     "SSH_private_path"  = "",
-    "SSH_public_key"    = ""
+    "SSH_public_key"    = "",
+    "valid_ips"         = []
   }
 }
 
@@ -110,14 +111,51 @@ variable "Networks" {
 ###############################################################
 
 # VM VARs
-variable "vms" {
-#  type = list(map(any))
+variable "vms_SG" {
+  type = object({
+    node_1 = object({
+      name = string
+      image = string
+      type = optional(string, "c5.2large")
+      zone = string
+      vpc_name = string
+      subnet = string
+      main_interface = string
+      security_group = string
+      secondary_ifs = list(object({
+        subnet = string
+        interface = string
+        sg = string
+      }))
+      volume_type = optional(string, "gp2")
+      volume_size = optional(number, 216)
+  })
+    node_2 = object({
+      name = string
+      image = string
+      type = optional(string, "c5.2large")
+      zone = string
+      vpc_name = string
+      subnet = string
+      main_interface = string
+      security_group = string
+      secondary_ifs = list(object({
+        subnet = string
+        interface = string
+        sg = string
+      }))
+      volume_type = optional(string, "gp2")
+      volume_size = optional(number, 216)
+  })
+
+})
+
   default = {
     node_1 = {
 
       # General
       name            = "Check_Point_SG_R81.20_1",
-      image           = "cmi-2609101B",
+      image           = "cmi-AB267A9E",
       type            = "c5.2large",
       zone            = "ru-msk-comp1p",
 
@@ -126,6 +164,7 @@ variable "vms" {
       subnet          = "Output",
       main_interface  = "10.255.255.5"
       security_group  = "FW_VPC_Ext_SG",
+
       secondary_ifs   = [
         {
           subnet = "Transit_01",
@@ -141,13 +180,13 @@ variable "vms" {
 
       # Disk
       volume_type     = "gp2",
-      volume_size     = 320,
+      volume_size     = 216,
     },
     node_2 = {
 
       # General
       name            = "Check_Point_SG_R81.20_2",
-      image           = "cmi-2609101B",
+      image           = "cmi-AB267A9E",
       type            = "c5.2large",
       zone            = "ru-msk-comp1p",
 
@@ -156,6 +195,7 @@ variable "vms" {
       subnet          = "Output",
       main_interface  = "10.255.255.6"
       security_group  = "FW_VPC_Ext_SG",
+
       secondary_ifs   = [
         {
           subnet = "Transit_01",
@@ -171,42 +211,82 @@ variable "vms" {
 
       # Disk
       volume_type     = "gp2",
+      volume_size     = 216,
+    }
+}
+}
+
+
+###############################################################
+
+# VM SMS
+variable "vms_SMS" {
+  type = object({
+    SMS = object({
+      name = string
+      image = string
+      type = optional(string, "c5.2large")
+      zone = string
+      vpc_name = string
+      subnet = string
+      main_interface = string
+      security_group = string
+      volume_type = optional(string, "gp2")
+      volume_size = optional(number, 320)
+  })
+})
+  default = {
+    SMS = {
+
+      # General
+      name            = "Check_Point_SMS_R81.20_1",
+      image           = "cmi-AB267A9E",
+      type            = "c5.2large",
+      zone            = "ru-msk-comp1p",
+
+      # Network
+      vpc_name        = "FW_VPC",
+      subnet          = "Output",
+      main_interface  = "10.255.255.10"
+      security_group  = "FW_VPC_Ext_SG",
+
+      # Disk
+      volume_type     = "gp2",
       volume_size     = 320,
     }
 }
 }
-# variable "fw_interfaces" {
-#   default = [
-#     {
-#       name        = "fw_1_vpc_1_transit_1"
-#       vpc_name    = "VPC_1"
-#       subnet_name = "Transit_1"
-#       ip_address  = "10.0.0.5"
-#       vm_name     = "CP_1"
-#     },
-#     {
-#       name        = "fw_2_vpc_1_transit_1"
-#       vpc_name    = "VPC_1"
-#       subnet_name = "Transit_1"
-#       ip_address  = "10.0.0.6"
-#       vm_name     = "CP_2"
-#     },
-#     {
-#       name        = "fw_1_vpc_2_transit_2"
-#       vpc_name    = "VPC_2"
-#       subnet_name = "Transit_2"
-#       ip_address  = "10.1.0.5"
-#       vm_name     = "CP_1"
-#     },
-#     {
-#       name        = "fw_2_vpc_2_transit_2"
-#       vpc_name    = "VPC_2"
-#       subnet_name = "Transit_2"
-#       ip_address  = "10.1.0.6"
-#       vm_name     = "CP_2"
-#     },
 
-#   ]
-# }
+###############################################################
+
+variable "vip_fw_interfaces" {
+  type = list(object({
+    subnet = string
+    interface = string
+    sg = string
+    wan = bool
+  }))
+  
+  default = [
+    {
+      subnet = "Output",
+      interface  = "10.255.255.4",
+      sg  = "FW_VPC_Ext_SG",
+      wan = true
+    },
+    {
+      subnet = "Transit_01",
+      interface = "10.255.0.4",
+      sg = "FW_VPC_Int_SG",
+      wan = false
+    },
+    {
+      subnet = "Transit_02",
+      interface = "10.255.1.4",
+      sg = "FW_VPC_Int_SG",
+      wan = false
+    }
+  ]
+}
 
 ###############################################################

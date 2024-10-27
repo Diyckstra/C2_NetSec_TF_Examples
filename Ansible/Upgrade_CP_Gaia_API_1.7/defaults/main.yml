@@ -1,0 +1,4 @@
+---
+# defaults file for Upgrade_CP_Gaia_API_1.7
+package_path: /home/ansible/gaia_api_upgrade
+package_name: Check_Point_gaia_api.tgz

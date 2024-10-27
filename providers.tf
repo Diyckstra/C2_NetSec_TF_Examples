@@ -50,3 +50,5 @@ provider "aws" {
 provider "remote" {
   # Configuration options
 }
+
+provider "time" {}

@@ -29,8 +29,12 @@ output "Interface_ID" {
   value = aws_network_interface.Creating_Secondary_Ifaces[*].id
 }
 
-output "EIPs_ID" {
-  value = aws_eip.Creating_EIPs[*].public_ip
+output "SG_EIPs_ID" {
+  value = aws_eip.Creating_EIPs_SG[*].public_ip
+}
+
+output "SMS_EIPs_ID" {
+  value = aws_eip.Creating_EIPs_SMS[*].public_ip
 }
 
 output "Output_Attached_Interfaces" {

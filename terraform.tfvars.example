@@ -4,5 +4,6 @@ admin = {
   "secret_key" = "",
   "access_key" = "",
   "SSH_private_path" = "",
-  "SSH_public_key" = ""
+  "SSH_public_key" = "",
+  "valid_ips" = []
 }
