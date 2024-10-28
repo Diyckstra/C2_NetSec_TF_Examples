@@ -115,7 +115,7 @@ resource "aws_instance" "Creating_Instances_SG" {
   monitoring                  = false
 
   associate_public_ip_address = false
-  source_dest_check           = true
+  source_dest_check           = false
 
   private_ip                  = each.value.main_interface
   subnet_id                   = local.Subnet_IDs_by_name[each.value.subnet]
@@ -282,7 +282,7 @@ resource "local_file" "hosts_yaml" {
            {
             valid_ips       = var.admin.valid_ips
 
-            SG_instance         = values(local.Firewalls_by_name)
+            SG_instance         = values(aws_instance.Creating_Instances_SG)[*].tags.Name
             SG_ip               = aws_eip.Creating_EIPs_SG[*].public_ip
             SG_admin_password   = [for i, p in random_password.Creating_password_SG : p.result if i % 4 == 0]
             SG_expert_password  = [for i, p in random_password.Creating_password_SG : p.result if i % 4 == 1]
@@ -291,7 +291,7 @@ resource "local_file" "hosts_yaml" {
 
             SG_sic_password     = [for i, p in random_password.Creating_first_SIC : p.result]
 
-            SMS_instance        = values(local.SMS_by_name)
+            SMS_instance        = values(aws_instance.Creating_Instances_SMS)[*].tags.Name
             SMS_ip              = aws_eip.Creating_EIPs_SMS[*].public_ip
             SMS_admin_password  = [for i, p in random_password.Creating_password_SMS : p.result if i % 4 == 0]
             SMS_expert_password = [for i, p in random_password.Creating_password_SMS : p.result if i % 4 == 1]

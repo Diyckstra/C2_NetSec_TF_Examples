@@ -14,14 +14,14 @@
     override: true
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Set access for script grub2-password"
   check_point.gaia.cp_gaia_run_script:
     script: "chmod +x {{ grub2_script_path }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Execute script grub2-password"
   check_point.gaia.cp_gaia_run_script:
@@ -30,7 +30,7 @@
   register: grub_result
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Check grub2 password deploy result"
   ansible.builtin.debug:
@@ -41,14 +41,14 @@
     - grub_result.run_script.tasks[0]['task-details'][0]['output'] | b64decode != ""
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Remove script grub2-password"
   check_point.gaia.cp_gaia_run_script:
     script: "rm {{ grub2_script_path }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 ### Expert
 - name: "Setting expert new password"
@@ -56,7 +56,7 @@
     password: "{{ expert_password }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 ### Access to console
 - name: Initialize empty lists
@@ -65,7 +65,7 @@
     allowed_hosts: []
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Add IPs to hosts list"
   ansible.builtin.set_fact:
@@ -74,7 +74,7 @@
   when: item is match('^[0-9.]+$') or item.endswith('/32')
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Add IPs-networks to networks list"
   ansible.builtin.set_fact:
@@ -83,7 +83,7 @@
   when: item is match('^.*\/[0-9]+$') and not item.endswith('/32')
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Set allowed clients"
   check_point.gaia.cp_gaia_allowed_clients:
@@ -92,7 +92,7 @@
     allowed_networks: "{{ allowed_networks }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 ### FTW
 - name: "Changing a hostname"
@@ -100,7 +100,7 @@
     name: "{{ hostname }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Changing the banner message"
   check_point.gaia.cp_gaia_banner:
@@ -112,14 +112,14 @@
       *********************************************************************
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Setting new timezone"
   check_point.gaia.cp_gaia_time_and_date:
     timezone: "{{ timezone }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Setting ntp servers for the system"
   check_point.gaia.cp_gaia_ntp:
@@ -129,7 +129,7 @@
       - {"version": 4, "type": "secondary", "address": "{{ ntp_2 }}"}
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Setting dns servers for the system"
   check_point.gaia.cp_gaia_dns:
@@ -139,14 +139,14 @@
     tertiary: "{{ dns_3 }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Disable IPv6"
   check_point.gaia.cp_gaia_ipv6:
     enabled: false
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Initial setup for SMS"
   check_point.gaia.cp_gaia_initial_setup:
@@ -177,32 +177,32 @@
     msg: "{{ ftw_result }}"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Pause to start cpconfig"
   ansible.builtin.pause:
     seconds: 30
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Unlock database"
   check_point.gaia.cp_gaia_run_script:
     script: clish -c "lock database override" && clish -c "unlock database"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Start check for updates"
   check_point.gaia.cp_gaia_run_script:
     script: clish -c "installer check-for-updates not-interactive"
   tags:
     - cpsg
-    - spsms
+    - cpsms
 
 - name: "Unlock database"
   check_point.gaia.cp_gaia_run_script:
     script: clish -c "lock database override" && clish -c "unlock database"
   tags:
     - cpsg
-    - spsms
+    - cpsms

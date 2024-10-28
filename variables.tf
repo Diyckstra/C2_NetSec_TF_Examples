@@ -27,7 +27,7 @@ variable "SecurityGroups" {
   default = {
     FW_VPC_Ext_SG = {
       vpc_name  = "FW_VPC"
-      from_ip   = ["195.38.23.0/24", "176.99.159.90/32"]
+      from_ip   = ["195.38.23.0/24", "176.99.159.90/32", "10.255.255.0/24"]
       to_ip     = ["0.0.0.0/0"]
     },
     FW_VPC_Int_SG = {

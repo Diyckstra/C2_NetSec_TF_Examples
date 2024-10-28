@@ -19,13 +19,8 @@
         - name: "Get user Ansible"
           check_point.gaia.cp_gaia_user_facts:
             name: ansible
-          ignore_errors: false
           register: user_fact_result
-
-        - name: "Show user Ansible with get"
-          ansible.builtin.debug:
-            msg: "{{ user_fact_result }}"
-
+          ignore_errors: false
       rescue:
         - name: "Create user Ansible"
           check_point.gaia.cp_gaia_user:
@@ -40,10 +35,11 @@
             must_change_password: false
             state: present
           register: user_fact_result
-
+          ignore_errors: false
+      always:
         - name: "Show created user Ansible"
           ansible.builtin.debug:
-            msg: "{{ user_fact_result }}"
+            msg: "Fatal error may happen here, it is normal"
 
     - name: "Unlock database"
       check_point.gaia.cp_gaia_run_script:
@@ -51,13 +47,14 @@
 
 - name: "Upgrade Gaia API to 1.7"
   hosts: all
+  strategy: free # noqa: run-once[play]
   gather_facts: false
   connection: ssh
   vars:
     ansible_port: 22
     ansible_user: ansible
     ansible_password: "{{ api_password }}"
-    ansible_ssh_common_args: '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+    ansible_ssh_common_args: "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
     ansible_python_interpreter: /usr/bin/python3
   roles:
     - role: Upgrade_CP_Gaia_API_1.7
@@ -66,6 +63,7 @@
 
 - name: "Check for FTW"
   hosts: all
+  strategy: free # noqa: run-once[play]
   gather_facts: false
   connection: httpapi
   vars:
@@ -90,6 +88,7 @@
 
 - name: "Start Fist Time Wizard"
   hosts: all
+  strategy: free # noqa: run-once[play]
   gather_facts: false
   connection: httpapi
   vars:
@@ -104,6 +103,8 @@
         - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode ==
           "In order to configure your system, please access the Web UI and finish the First Time Wizard."
         - api_version_result.ansible_facts.current_version == "1.7"
+      tags:
+        - ftw
 
 - name: "Check for FTW"
   hosts: SecurityManagementServer
@@ -120,10 +121,14 @@
       check_point.gaia.cp_gaia_run_script:
         script: ftw
       register: install_state_output
+      tags:
+        - mgmt
 
     - name: "Unlock database"
       check_point.gaia.cp_gaia_run_script:
         script: clish -c "lock database override" && clish -c "unlock database"
+      tags:
+        - mgmt
 
 - name: "Pause for restart CP SMS"
   hosts: localhost
@@ -149,24 +154,46 @@
       check_point.gaia.cp_gaia_run_script:
         script: >
           mgmt_cli set api-settings
-          accepted-api-calls-from "all ip addresses that can be used for gui clients"
+          accepted-api-calls-from 'all ip addresses that can be used for gui clients'
           --user "{{ ansible_user }}"
           --domain 'System Data'
-          --password "{{ ansible_password }}"
+          --password '"{{ ansible_password }}"'
           --format json
         wait_for_task: true
-      register: api_access_result_1
+      register: api_access_result
       when:
         - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
-
-    - name: "Display Output"
-      ansible.builtin.debug:
-        msg: "{{ api_access_result_1.run_script.tasks[0]['task-details'][0]['output'] | b64decode }}"
-      when:
-        - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
+      tags:
+        - mgmt
 
     - name: "Display Error"
       ansible.builtin.debug:
-        msg: "{{ api_access_result_1.run_script.tasks[0]['task-details'][0]['error'] | b64decode }}"
+        msg: "{{ api_access_result.run_script.tasks[0]['task-details'][0]['error'] | b64decode }}"
       when:
         - install_state_output.run_script.tasks[0]['task-details'][0]['output'] | b64decode == ""
+        - api_access_result.run_script.tasks[0]['task-details'][0]['error'] | b64decode != ""
+      tags:
+        - mgmt
+
+- name: "Shutdown servers for complete FTW"
+  hosts: all
+  gather_facts: false
+  connection: httpapi
+  vars:
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.gaia.checkpoint
+    ansible_user: ansible
+    ansible_password: "{{ api_password }}"
+  tasks:
+    - name: "Shutdown for complete FTW"
+      check_point.gaia.cp_gaia_run_script:
+        script: "shutdown -h now"
+      tags:
+        - ftw
+
+    - name: "Ending the script"
+      ansible.builtin.pause:
+        prompt: "Configuration is complete. Turn on the virtual machines manually"
+      tags:
+        - ftw

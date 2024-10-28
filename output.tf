@@ -15,8 +15,12 @@ output "Subnet_ID" {
 }
 
 # Instances
-output "Instances_ID" {
+output "Instances_ID_SG" {
   value = local.Firewalls_by_name
+}
+
+output "Instances_ID_SMS" {
+  value = local.SMS_by_name
 }
 
 # Interfaces

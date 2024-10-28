@@ -16,11 +16,6 @@
   ansible.builtin.shell: "{{ package_path }}/install_gaia_api.sh"
   args:
     chdir: "{{ package_path }}"
-  register: upgrade_script_result
   notify: Pause_to_restart_api_status
   # noqa command-instead-of-shell
   # noqa no-changed-when
-
-- name: "Output the result script"
-  ansible.builtin.debug:
-    msg: "{{ upgrade_script_result }}"

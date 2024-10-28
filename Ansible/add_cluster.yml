@@ -1,0 +1,60 @@
+- name: "Managmenet"
+  hosts: SecurityManagementServer
+  gather_facts: false
+  # connection: httpapi
+  vars:
+    ansible_connection: httpapi
+    ansible_httpapi_use_ssl: true
+    ansible_httpapi_validate_certs: false
+    ansible_network_os: check_point.mgmt.checkpoint
+    ansible_user: admin
+    ansible_password: "{{ admin_password }}"
+  tasks:
+    - name: Add simple cluster
+      check_point.mgmt.cp_mgmt_simple_cluster:
+        details_level: full
+        # ignore_warnings: true
+        cluster_mode: cluster-xl-ha
+        color: orange
+        firewall: true
+        ips: true
+        application_control: true
+        name: Check_Point_SG_R81.20_Cl
+        os_name: Gaia
+        state: present
+        cluster_version: R81.20
+        ip_address: 10.255.255.4
+        interfaces:
+          - name: eth0
+            anti_spoofing: false
+            interface_type: "cluster + sync"
+            ip_address: 10.255.255.4
+            network_mask: 255.255.255.0
+            topology: external
+        members:
+          - name: "{{ gateways[0]['name'] }}"
+            color: orange
+            interfaces:
+              - name: eth0
+                ip_address: "{{ gateways[0]['ip'] }}"
+                network_mask: 255.255.255.0
+            # ignore_warnings: true
+            details_level: full
+            ip_address: "{{ gateways[0]['ip'] }}"
+            one_time_password: "{{ gateways[0]['sic'] }}"
+          - name: "{{ gateways[1]['name'] }}"
+            color: orange
+            interfaces:
+              - name: eth0
+                ip_address: "{{ gateways[1]['ip'] }}"
+                network_mask: 255.255.255.0
+            # ignore_warnings: true
+            details_level: full
+            ip_address: "{{ gateways[1]['ip'] }}"
+            one_time_password: "{{ gateways[1]['sic'] }}"
+        auto_publish_session: true
+      register: result
+
+    - name: Display Output
+      ansible.builtin.debug:
+        msg: "{{ result }}"
