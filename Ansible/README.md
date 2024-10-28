@@ -29,6 +29,14 @@ Launch example Playbook
 
     ansible-playbook playbook.yml -i inventory.yml
 
+Troubleshooting
+---------------
+
+A situation may arise when SMS hangs and host access is not allowed. In this case, you need to run a playbook with the `mgmt` tag:
+
+    ansible-playbook playbook.yml -i inventory.yml -t mgmt
+
+
 License
 -------
 

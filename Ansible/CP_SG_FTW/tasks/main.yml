@@ -179,13 +179,6 @@
     - cpsg
     - cpsms
 
-- name: "Pause to start cpconfig"
-  ansible.builtin.pause:
-    seconds: 30
-  tags:
-    - cpsg
-    - cpsms
-
 - name: "Unlock database"
   check_point.gaia.cp_gaia_run_script:
     script: clish -c "lock database override" && clish -c "unlock database"

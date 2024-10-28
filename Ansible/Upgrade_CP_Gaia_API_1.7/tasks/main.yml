@@ -16,6 +16,5 @@
   ansible.builtin.shell: "{{ package_path }}/install_gaia_api.sh"
   args:
     chdir: "{{ package_path }}"
-  notify: Pause_to_restart_api_status
   # noqa command-instead-of-shell
   # noqa no-changed-when

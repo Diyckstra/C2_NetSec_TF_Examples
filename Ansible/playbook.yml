@@ -61,6 +61,15 @@
       when:
         - api_version_result.ansible_facts.current_version in ["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6"]
 
+- name: "Pause for restart GAIA API"
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: "Pause for restart GAIA API"
+      ansible.builtin.pause:
+        seconds: 30
+
 - name: "Check for FTW"
   hosts: all
   strategy: free # noqa: run-once[play]
@@ -106,6 +115,15 @@
       tags:
         - ftw
 
+- name: "Pause for restart services CP SMS"
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - name: "Pause for restart services CP SMS"
+      ansible.builtin.pause:
+        minutes: 5
+
 - name: "Check for FTW"
   hosts: SecurityManagementServer
   gather_facts: false
@@ -129,15 +147,6 @@
         script: clish -c "lock database override" && clish -c "unlock database"
       tags:
         - mgmt
-
-- name: "Pause for restart CP SMS"
-  hosts: localhost
-  gather_facts: false
-  connection: local
-  tasks:
-    - name: "Pause for restart CP SMS"
-      ansible.builtin.pause:
-        minutes: 3
 
 - name: "Activate MGMT API for valid IPs"
   hosts: SecurityManagementServer
